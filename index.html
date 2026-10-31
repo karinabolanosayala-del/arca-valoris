@@ -32,10 +32,14 @@
         <label>Tipo<select name="tipo"></select></label>
         <label>Uso de suelo<select name="uso"></select></label>
         <label>Municipio<select name="municipio"></select></label>
-        <label class="span2">Colonia / dirección<input name="colonia" value="Chapalita"></label>
+        <label class="span2">Calle y número<input name="calle" value="Av. Guadalupe 1234" autocomplete="off"></label>
+        <label>Colonia<input name="colonia" value="Chapalita" autocomplete="off"></label>
+        <label>C.P.<input name="cp" inputmode="numeric" maxlength="5" placeholder="45040" autocomplete="off"></label>
+        <button type="button" id="btn-ubicar" class="span2">Ubicar domicilio en el mapa</button>
+        <div id="geo-out" class="span2"></div>
         <label>Latitud<input name="lat" type="number" step="any" value="20.664"></label>
         <label>Longitud<input name="lng" type="number" step="any" value="-103.401"></label>
-        <p class="span2 hint">Clic en el mapa para ubicar el sujeto.</p>
+        <p class="span2 hint">También puedes hacer clic en el mapa o arrastrar el marcador del sujeto; el domicilio se completa solo.</p>
         <label>Sup. terreno m²<input name="sup_terreno" type="number" value="200"></label>
         <label>Sup. construcción m²<input name="sup_construccion" type="number" value="240"></label>
         <label class="nt">Edad (años)<input name="edad" type="number" value="15"></label>
@@ -122,6 +126,7 @@
 <script src="js/data.js"></script>
 <script src="js/shf.js"></script>
 <script src="js/ingesta.js"></script>
+<script src="js/geo.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -57,7 +57,8 @@ function leerSujeto() {
   const n = k => Number(F[k].value);
   const tipo = F.tipo.value;
   return {
-    operacion: F.operacion.value, tipo, uso: F.uso.value, municipio: F.municipio.value, colonia: F.colonia.value,
+    operacion: F.operacion.value, tipo, uso: F.uso.value, municipio: F.municipio.value,
+    calle: F.calle.value, colonia: F.colonia.value, cp: F.cp.value,
     lat: n("lat"), lng: n("lng"), sup_terreno: n("sup_terreno"),
     sup_construccion: tipo === "terreno" ? 0 : n("sup_construccion"),
     edad: tipo === "terreno" ? null : n("edad"),
@@ -86,20 +87,71 @@ function pintarBase() {
       .addTo(capaBase);
   }
 }
-function pintarSujeto() {
+const iconoSujeto = L.divIcon({
+  className: "",
+  html: `<div style="width:20px;height:20px;border-radius:50%;background:${css("--subj")};border:3px solid #fff;box-shadow:0 0 0 2px ${css("--subj")}"></div>`,
+  iconSize: [20, 20], iconAnchor: [10, 10]
+});
+function pintarSujeto(centrar = false) {
   const s = leerSujeto();
   if (!Number.isFinite(s.lat) || !Number.isFinite(s.lng)) return;
   if (marcadorSujeto) marcadorSujeto.remove();
-  marcadorSujeto = L.circleMarker([s.lat, s.lng], { radius: 9, color: css("--subj"), weight: 3, fillOpacity: 0.85 })
-    .bindTooltip("Sujeto").addTo(map);
+  marcadorSujeto = L.marker([s.lat, s.lng], { icon: iconoSujeto, draggable: true, zIndexOffset: 1000 })
+    .bindTooltip("Sujeto · arrástrame").addTo(map);
+  marcadorSujeto.on("dragend", e => fijarUbicacion(e.target.getLatLng(), true));
+  if (centrar) map.setView([s.lat, s.lng], 16);
 }
-map.on("click", e => {
-  F.lat.value = e.latlng.lat.toFixed(5);
-  F.lng.value = e.latlng.lng.toFixed(5);
+
+// Coloca el sujeto en un punto; si viene del mapa, completa el domicilio por geocodificación inversa.
+async function fijarUbicacion(ll, completarDomicilio) {
+  F.lat.value = ll.lat.toFixed(6);
+  F.lng.value = ll.lng.toFixed(6);
   pintarSujeto();
-});
-F.lat.addEventListener("change", pintarSujeto);
-F.lng.addEventListener("change", pintarSujeto);
+  if (!completarDomicilio) return;
+  $("#geo-out").innerHTML = `<p class="muted">Buscando domicilio…</p>`;
+  try {
+    const d = await geocodificarInverso(ll.lat, ll.lng);
+    if (!d) { $("#geo-out").innerHTML = ""; return; }
+    if (d.calle) F.calle.value = d.calle;
+    if (d.colonia) F.colonia.value = d.colonia;
+    if (d.cp) F.cp.value = d.cp;
+    if (d.municipio) F.municipio.value = d.municipio;
+    $("#geo-out").innerHTML = `<p class="ok">📍 ${esc(d.etiqueta)}</p>`;
+  } catch (e) { $("#geo-out").innerHTML = ""; }
+}
+
+map.on("click", e => fijarUbicacion(e.latlng, true));
+F.lat.addEventListener("change", () => pintarSujeto(true));
+F.lng.addEventListener("change", () => pintarSujeto(true));
+
+async function ubicarDomicilio() {
+  const s = leerSujeto();
+  if (!s.calle && !s.colonia && !s.cp) { $("#geo-out").innerHTML = `<p class="err">Escribe al menos la calle, la colonia o el C.P.</p>`; return; }
+  $("#geo-out").innerHTML = `<p class="muted">Buscando “${esc([s.calle, s.colonia, s.municipio].filter(Boolean).join(", "))}”…</p>`;
+  try {
+    const rs = await geocodificar(s);
+    if (!rs.length) { $("#geo-out").innerHTML = `<p class="err">No encontré ese domicilio en la ZMG. Revisa la escritura o haz clic en el mapa.</p>`; return; }
+    const elegir = r => {
+      fijarUbicacion({ lat: r.lat, lng: r.lng }, false);
+      if (r.municipio) F.municipio.value = r.municipio;
+      if (r.colonia && !F.colonia.value) F.colonia.value = r.colonia;
+      if (r.cp && !F.cp.value) F.cp.value = r.cp;
+      map.setView([r.lat, r.lng], 17);
+      $("#geo-out").innerHTML = `<p class="${r.aproximado ? "err" : "ok"}">📍 ${esc(r.etiqueta)}${r.aproximado
+        ? "<br>Ubicación aproximada (no se encontró el número exacto): arrastra el marcador al predio." : ""}</p>`;
+    };
+    elegir(rs[0]);
+    if (rs.length > 1) {
+      $("#geo-out").insertAdjacentHTML("beforeend", `<p class="muted">¿No es este? Otras coincidencias:</p>` +
+        rs.slice(1).map((r, i) => `<button type="button" data-i="${i + 1}">${esc(r.etiqueta)}</button>`).join(""));
+      $("#geo-out").querySelectorAll("button").forEach(b => b.addEventListener("click", () => elegir(rs[+b.dataset.i])));
+    }
+  } catch (e) { $("#geo-out").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+$("#btn-ubicar").addEventListener("click", ubicarDomicilio);
+[F.calle, F.colonia, F.cp].forEach(i => i.addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); ubicarDomicilio(); }
+}));
 
 // ---------- homologación ----------
 F.addEventListener("submit", e => {

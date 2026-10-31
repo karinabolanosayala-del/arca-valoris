@@ -76,11 +76,14 @@ function leerSujeto() {
 
 // ---------- mapa ----------
 const map = L.map("map").setView([20.66, -103.35], 11);
-const capaOscura = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-  maxZoom: 19, subdomains: "abcd", className: "tiles-dark", attribution: "© OpenStreetMap · © CARTO"
-}).addTo(map);
-// Satélite gratuito (Esri World Imagery) con calles y nombres encima; sin API key.
+// Mapas base de Esri sin API key: gris oscuro y satélite.
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const capaOscura = L.layerGroup([
+  L.tileLayer(ESRI + "Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 16, className: "tiles-dark", attribution: "© Esri, HERE, Garmin, © OpenStreetMap"
+  }),
+  L.tileLayer(ESRI + "Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 })
+]).addTo(map);
 const capaSatelite = L.layerGroup([
   L.tileLayer(ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19, attribution: "Imágenes © Esri, Maxar, Earthstar Geographics"

@@ -1,4 +1,6 @@
-# Lawgic — Comparables y homologación SHF para la ZMG
+# Arca Valoris — Comparables y homologación SHF para la ZMG
+
+*Arca Valoris* (latín): "el arca del valor".
 
 Herramienta para valuadores: reúne anuncios de inmuebles en venta y renta de la Zona Metropolitana de Guadalajara, los clasifica con Claude, selecciona los comparables del inmueble sujeto y calcula el valor comercial por homologación siguiendo los factores de la metodología SHF.
 

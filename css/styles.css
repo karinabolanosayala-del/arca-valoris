@@ -26,7 +26,7 @@ h3{font:500 20px/1.2 var(--serif);margin:10px 0 6px}
 .hero-top{position:relative;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 .brand{font:600 13px var(--sans);letter-spacing:.35em}
 .eyebrow{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-.hero-word{position:relative;margin:26px 0 0;font:500 clamp(72px,17vw,230px)/.85 var(--serif);letter-spacing:.06em;text-align:center;
+.hero-word{position:relative;margin:30px 0 0;font:500 clamp(44px,10.5vw,170px)/.9 var(--serif);letter-spacing:.05em;text-align:center;white-space:nowrap;
   background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.04));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero-row{position:relative;display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;margin-top:22px}
 .hero-claim{font:400 clamp(28px,3.4vw,42px)/1.1 var(--serif);margin:0 0 12px}

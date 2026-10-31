@@ -1,4 +1,4 @@
-// Interfaz de Lawgic: estado, mapa, homologación, base de datos y carga.
+// Interfaz de Arca Valoris: estado, mapa, homologación, base de datos y carga.
 
 const LS_BASE = "lawgic-base-v1";
 const LS_CFG = "lawgic-cfg-v1";
@@ -260,7 +260,7 @@ function descargar(nombre, texto) {
   a.href = URL.createObjectURL(new Blob([texto], { type: "text/csv;charset=utf-8" }));
   a.download = nombre; a.click();
 }
-$("#exportar").addEventListener("click", () => descargar("lawgic-base.csv", aCSV(BASE)));
+$("#exportar").addEventListener("click", () => descargar("arca-valoris-base.csv", aCSV(BASE)));
 
 function agregar(nuevos) {
   const ids = new Set(nuevos.map(x => x.id));
@@ -271,7 +271,7 @@ function agregar(nuevos) {
 
 // ---------- carga ----------
 $(".cols-list").textContent = CAMPOS.join(", ");
-$("#plantilla").addEventListener("click", e => { e.preventDefault(); descargar("plantilla-lawgic.csv", aCSV(BASE.slice(0, 3))); });
+$("#plantilla").addEventListener("click", e => { e.preventDefault(); descargar("plantilla-arca-valoris.csv", aCSV(BASE.slice(0, 3))); });
 
 $("#archivo").addEventListener("change", async e => {
   const file = e.target.files[0]; if (!file) return;

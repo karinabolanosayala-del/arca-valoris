@@ -8,6 +8,11 @@ const fmt = (n, d = 0) => (n == null || !isFinite(n) ? "—" : n.toLocaleString(
 const money = n => "$" + fmt(n);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// Enlaces a Google Maps (sin API key): mapa y Street View en una pestaña nueva.
+const gmapsUrl = (lat, lng) => `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+const streetUrl = (lat, lng) => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+const gLinks = (lat, lng) => `<span class="glinks"><a href="${gmapsUrl(lat, lng)}" target="_blank" rel="noopener">Google Maps</a> · <a href="${streetUrl(lat, lng)}" target="_blank" rel="noopener">Street View</a></span>`;
+
 function cargarLS(k, def) {
   try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; }
 }
@@ -85,6 +90,7 @@ function pintarBase() {
     if (!Number.isFinite(x.lat) || !Number.isFinite(x.lng)) continue;
     L.circleMarker([x.lat, x.lng], { radius: 3, color: css("--base"), weight: 1, fillOpacity: 0.5 })
       .bindTooltip(`${x.tipo} · ${x.operacion} · ${x.colonia}<br>${money(x.precio)}`)
+      .bindPopup(`<b>${esc(x.tipo)} · ${esc(x.operacion)}</b><br>${esc(x.colonia)}, ${esc(x.municipio)}<br>${money(x.precio)}<br>${gLinks(x.lat, x.lng)}`)
       .addTo(capaBase);
   }
 }
@@ -117,7 +123,7 @@ async function fijarUbicacion(ll, completarDomicilio) {
     if (d.colonia) F.colonia.value = d.colonia;
     if (d.cp) F.cp.value = d.cp;
     if (d.municipio) F.municipio.value = d.municipio;
-    $("#geo-out").innerHTML = `<p class="ok">📍 ${esc(d.etiqueta)}</p>`;
+    $("#geo-out").innerHTML = `<p class="ok">📍 ${esc(d.etiqueta)}<br>${gLinks(ll.lat.toFixed(6), ll.lng.toFixed(6))}</p>`;
   } catch (e) { $("#geo-out").innerHTML = ""; }
 }
 
@@ -138,7 +144,7 @@ async function ubicarDomicilio() {
       if (r.colonia && !F.colonia.value) F.colonia.value = r.colonia;
       if (r.cp && !F.cp.value) F.cp.value = r.cp;
       map.setView([r.lat, r.lng], 17);
-      $("#geo-out").innerHTML = `<p class="${r.aproximado ? "err" : "ok"}">📍 ${esc(r.etiqueta)}${r.aproximado
+      $("#geo-out").innerHTML = `<p class="${r.aproximado ? "err" : "ok"}">📍 ${esc(r.etiqueta)}<br>${gLinks(r.lat, r.lng)}${r.aproximado
         ? "<br>Ubicación aproximada (no se encontró el número exacto): arrastra el marcador al predio." : ""}</p>`;
     };
     elegir(rs[0]);
@@ -171,6 +177,7 @@ F.addEventListener("submit", e => {
     pts.push([r.c.lat, r.c.lng]);
     L.circleMarker([r.c.lat, r.c.lng], { radius: 8, color: css("--comp"), weight: 2, fillOpacity: 0.8 })
       .bindTooltip(`#${r.n} ${r.c.colonia}`, { permanent: true, direction: "top", className: "lbl" })
+      .bindPopup(`<b>#${r.n} ${esc(r.c.colonia)}</b><br>${money(r.c.precio)} · ${fmt(superficieBase(r.c))} m²<br>${gLinks(r.c.lat, r.c.lng)}`)
       .addTo(capaComp);
   }
   if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40], maxZoom: 15 });
@@ -194,7 +201,7 @@ function renderHomologacion() {
     const c = r.c, f = r.h.factores;
     html += `<tr class="${r.h.dentroDeRango ? "" : "fuera"}">
       <td>${r.n}</td>
-      <td class="l">${esc(c.colonia)}<br><span class="muted">${esc(c.municipio)} · ${esc(c.fuente)}</span></td>
+      <td class="l">${esc(c.colonia)}<br><span class="muted">${esc(c.municipio)} · ${esc(c.fuente)}</span><br>${gLinks(c.lat, c.lng)}</td>
       <td class="l">${terreno ? "—" : `${esc(c.clase)} · ${c.edad ?? "—"} a · ${esc(c.conservacion)}`}</td>
       <td>${fmt(c.distanciaKm, 1)}</td>
       <td>${money(c.precio)}</td>

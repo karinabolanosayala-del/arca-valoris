@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap">
-<link rel="stylesheet" href="css/styles.css?v=20261031f">
+<link rel="stylesheet" href="css/styles.css?v=20261031g">
 </head>
 <body>
 <header class="hero">
@@ -126,7 +126,11 @@
       <h2>1 · Anuncios con IA (uno o por lote)</h2>
       <p class="muted">Pega uno o varios anuncios, o una página de resultados completa que estés consultando (Ctrl+A, Ctrl+C). Claude separa cada anuncio, extrae los datos y clasifica tipo, uso, clase SHF, edad y conservación.</p>
       <label>API key de Anthropic<input id="ak" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
-      <label>Modelo<input id="modelo" value="claude-sonnet-5-5"></label>
+      <label>Modelo<select id="modelo">
+        <option value="claude-sonnet-5-5" selected>Claude Sonnet 5.5 (recomendado)</option>
+        <option value="claude-haiku-5-5">Claude Haiku 5.5 (más rápido y económico)</option>
+        <option value="claude-opus-5-5">Claude Opus 5.5 (máxima precisión)</option>
+      </select></label>
       <textarea id="anuncio" rows="8" placeholder="Pega aquí el anuncio…"></textarea>
       <button id="btn-ia" class="primary">Extraer y clasificar</button>
       <p class="hint">Para tu consulta. Revisa los términos de uso del portal antes de reutilizar datos.</p>
@@ -176,11 +180,11 @@
 <footer class="muted">Arca Valoris · Hackathon 2026 · Los anuncios "demo (simulado)" son datos generados para la demostración, no anuncios reales.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/data.js?v=20261031f"></script>
-<script src="js/shf.js?v=20261031f"></script>
-<script src="js/ingesta.js?v=20261031f"></script>
-<script src="js/geo.js?v=20261031f"></script>
-<script src="js/gmaps.js?v=20261031f"></script>
-<script src="js/app.js?v=20261031f"></script>
+<script src="js/data.js?v=20261031g"></script>
+<script src="js/shf.js?v=20261031g"></script>
+<script src="js/ingesta.js?v=20261031g"></script>
+<script src="js/geo.js?v=20261031g"></script>
+<script src="js/gmaps.js?v=20261031g"></script>
+<script src="js/app.js?v=20261031g"></script>
 </body>
 </html>

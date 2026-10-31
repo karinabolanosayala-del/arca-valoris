@@ -311,6 +311,10 @@ $("#archivo").addEventListener("change", async e => {
 $("#btn-ia").addEventListener("click", async () => {
   const key = $("#ak").value.trim(), txt = $("#anuncio").value.trim();
   if (!key || !txt) { $("#ia-out").innerHTML = `<p class="err">Falta la API key o el anuncio.</p>`; return; }
+  if (/^https?:\/\/\S+$/.test(txt)) {
+    $("#ia-out").innerHTML = `<p class="err">Pegaste solo el link. Abre el anuncio, selecciona todo el texto de la página (Ctrl+A), cópialo (Ctrl+C) y pégalo aquí.</p>`;
+    return;
+  }
   $("#ia-out").innerHTML = `<p class="muted">Analizando con Claude…</p>`;
   try {
     const lote = await extraerConClaude(txt, key, $("#modelo").value.trim());

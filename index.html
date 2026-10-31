@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap">
-<link rel="stylesheet" href="css/styles.css?v=20261031c">
+<link rel="stylesheet" href="css/styles.css?v=20261031e">
 </head>
 <body>
 <header class="hero">
@@ -90,6 +90,12 @@
     </div>
   </div>
 
+  <div id="gcard" class="card" hidden>
+    <div class="reshead"><h2>Vista Google · satélite y Street View</h2></div>
+    <p id="g-estado" class="hint">Cargando Google Maps…</p>
+    <div class="gviews"><div id="gmap"></div><div id="gpano"></div></div>
+  </div>
+
   <div id="resultado" class="card" hidden>
     <div class="reshead">
       <h2>Homologación</h2>
@@ -153,16 +159,28 @@
     <div class="grid3" id="cfg"></div>
     <button id="reset-base">Restaurar base de demostración</button>
   </div>
+  <div class="card">
+    <h2>Google Maps</h2>
+    <p class="muted">Pega tu API key de Google Maps para ver el mapa satelital y Street View del sujeto y de cada comparable. Se guarda solo en este navegador.</p>
+    <div class="grid2">
+      <label class="span2">API key de Google Maps<input id="gkey" type="password" placeholder="AIza…" autocomplete="off"></label>
+      <button id="gkey-guardar" class="primary">Guardar y conectar</button>
+      <button id="gkey-borrar">Quitar key</button>
+    </div>
+    <p id="gkey-out" class="hint"></p>
+    <p class="hint">En Google Cloud: habilita “Maps JavaScript API”, crea la key y restríngela a <code>https://karinabolanosayala-del.github.io/*</code> y <code>http://localhost:8765/*</code>.</p>
+  </div>
 </section>
 </main>
 
 <footer class="muted">Arca Valoris · Hackathon 2026 · Los anuncios "demo (simulado)" son datos generados para la demostración, no anuncios reales.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/data.js?v=20261031c"></script>
-<script src="js/shf.js?v=20261031c"></script>
-<script src="js/ingesta.js?v=20261031c"></script>
-<script src="js/geo.js?v=20261031c"></script>
-<script src="js/app.js?v=20261031c"></script>
+<script src="js/data.js?v=20261031e"></script>
+<script src="js/shf.js?v=20261031e"></script>
+<script src="js/ingesta.js?v=20261031e"></script>
+<script src="js/geo.js?v=20261031e"></script>
+<script src="js/gmaps.js?v=20261031e"></script>
+<script src="js/app.js?v=20261031e"></script>
 </body>
 </html>

@@ -144,6 +144,7 @@ async function ubicarDomicilio() {
       if (r.colonia && !F.colonia.value) F.colonia.value = r.colonia;
       if (r.cp && !F.cp.value) F.cp.value = r.cp;
       map.setView([r.lat, r.lng], 17);
+      if (gm) { gm.map.setCenter({ lat: r.lat, lng: r.lng }); gm.map.setZoom(18); gmStreetView(r.lat, r.lng, "Sujeto"); }
       $("#geo-out").innerHTML = `<p class="${r.aproximado ? "err" : "ok"}">📍 ${esc(r.etiqueta)}<br>${gLinks(r.lat, r.lng)}${r.aproximado
         ? "<br>Ubicación aproximada (no se encontró el número exacto): arrastra el marcador al predio." : ""}</p>`;
     };
@@ -182,6 +183,7 @@ F.addEventListener("submit", e => {
   }
   if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40], maxZoom: 15 });
   renderHomologacion();
+  gmMostrar(sujetoActual, filas);
 });
 
 function renderHomologacion() {
@@ -201,7 +203,7 @@ function renderHomologacion() {
     const c = r.c, f = r.h.factores;
     html += `<tr class="${r.h.dentroDeRango ? "" : "fuera"}">
       <td>${r.n}</td>
-      <td class="l">${esc(c.colonia)}<br><span class="muted">${esc(c.municipio)} · ${esc(c.fuente)}</span><br>${gLinks(c.lat, c.lng)}</td>
+      <td class="l">${esc(c.colonia)}<br><span class="muted">${esc(c.municipio)} · ${esc(c.fuente)}</span><br>${gLinks(c.lat, c.lng)}${gm ? `<br><button type="button" class="gsv" data-n="${r.n}">Ver fachada</button>` : ""}</td>
       <td class="l">${terreno ? "—" : `${esc(c.clase)} · ${c.edad ?? "—"} a · ${esc(c.conservacion)}`}</td>
       <td>${fmt(c.distanciaKm, 1)}</td>
       <td>${money(c.precio)}</td>
@@ -218,6 +220,11 @@ function renderHomologacion() {
   $("#tabla-homo").innerHTML = html + "</tbody>";
   $("#tabla-homo").querySelectorAll("input.fz").forEach(i => i.addEventListener("change", e => {
     const r = filas.find(x => x.n == e.target.dataset.n); r.fz = Number(e.target.value) || 1; renderHomologacion();
+  }));
+  $("#tabla-homo").querySelectorAll("button.gsv").forEach(b => b.addEventListener("click", () => {
+    const r = filas.find(x => x.n == b.dataset.n);
+    gmStreetView(r.c.lat, r.c.lng, `#${r.n} ${r.c.colonia}`);
+    $("#gcard").scrollIntoView({ behavior: "smooth", block: "center" });
   }));
   $("#tabla-homo").querySelectorAll("input.inc").forEach(i => i.addEventListener("change", e => {
     filas.find(x => x.n == e.target.dataset.n).incluir = e.target.checked; renderHomologacion();
@@ -342,6 +349,25 @@ function actualizarStats() {
   $("#stat-m").textContent = munis;
 }
 
+// ---------- Google Maps ----------
+$("#gkey").value = leerGKey() ? "••••••••" : "";
+$("#gkey-guardar").addEventListener("click", async () => {
+  const k = $("#gkey").value.trim();
+  if (!k || k.startsWith("•")) { $("#gkey-out").textContent = "Pega la API key."; return; }
+  guardarGKey(k);
+  $("#gkey").value = "••••••••";
+  $("#gkey-out").textContent = "Conectando…";
+  const ok = await iniciarGoogle();
+  $("#gkey-out").textContent = ok ? "Conectado. Ve a Valuación y busca comparables." : $("#g-estado").textContent;
+  if (ok && sujetoActual) { renderHomologacion(); gmMostrar(sujetoActual, filas); }
+});
+$("#gkey-borrar").addEventListener("click", () => {
+  guardarGKey("");
+  $("#gkey").value = "";
+  $("#gkey-out").textContent = "Key eliminada de este navegador. Recarga la página.";
+});
+
 pintarBase();
 pintarSujeto();
 actualizarStats();
+iniciarGoogle();

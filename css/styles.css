@@ -97,6 +97,11 @@ code.cols-list{display:block;font-size:11.5px;background:var(--surface2);padding
 .ficha{border:1px solid var(--line2);border-radius:12px;padding:12px;margin-top:10px;font-size:13px;background:var(--surface2)}
 .ok{color:var(--ok)}.err{color:var(--bad)}
 a{color:var(--gold)}
+.gviews{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#gmap,#gpano{height:420px;border-radius:14px;background:#111}
+@media (max-width:900px){.gviews{grid-template-columns:1fr}}
+@media print{#gcard{display:none!important}}
+button.gsv{font-size:11.5px;padding:3px 9px;margin-top:4px}
 .glinks{font-size:11.5px}
 .glinks a{text-decoration:none;border-bottom:1px solid rgba(200,164,106,.4)}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#1b1b1f;color:var(--ink);border:1px solid var(--line2)}

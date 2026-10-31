@@ -1,0 +1,284 @@
+// Interfaz de Lawgic: estado, mapa, homologación, base de datos y carga.
+
+const LS_BASE = "lawgic-base-v1";
+const LS_CFG = "lawgic-cfg-v1";
+
+const $ = s => document.querySelector(s);
+const fmt = (n, d = 0) => (n == null || !isFinite(n) ? "—" : n.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }));
+const money = n => "$" + fmt(n);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function cargarLS(k, def) {
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; }
+}
+function guardarLS(k, v) {
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento: la app sigue en memoria */ }
+}
+
+let BASE = cargarLS(LS_BASE, null) || generarDemo();
+let CFG = { ...CONFIG_DEFAULT, ...cargarLS(LS_CFG, {}) };
+let filas = [];   // comparables homologados en pantalla
+let sujetoActual = null;
+
+// ---------- pestañas ----------
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.id === "tab-" + b.dataset.tab));
+  if (b.dataset.tab === "valuacion") setTimeout(() => map.invalidateSize(), 50);
+  if (b.dataset.tab === "base") renderBase();
+}));
+
+function opciones(sel, arr, valor) {
+  sel.innerHTML = arr.map(v => `<option${v === valor ? " selected" : ""}>${esc(v)}</option>`).join("");
+}
+
+// ---------- formulario sujeto ----------
+const F = $("#sujeto");
+opciones(F.operacion, OPERACIONES, "venta");
+opciones(F.tipo, TIPOS, "casa");
+opciones(F.uso, USOS, "habitacional");
+opciones(F.municipio, MUNICIPIOS, "Guadalajara");
+opciones(F.clase, CLASES, "semilujo");
+opciones(F.conservacion, CONSERVACION, "bueno");
+opciones(F.ubicacion, UBICACIONES, "medio");
+
+function toggleTerreno() {
+  const t = F.tipo.value === "terreno";
+  document.querySelectorAll("#sujeto .nt").forEach(el => (el.style.display = t ? "none" : ""));
+  F.sup_construccion.closest("label").style.display = t ? "none" : "";
+}
+F.tipo.addEventListener("change", () => {
+  if (F.tipo.value === "local") F.uso.value = "comercial";
+  toggleTerreno();
+});
+toggleTerreno();
+
+function leerSujeto() {
+  const n = k => Number(F[k].value);
+  const tipo = F.tipo.value;
+  return {
+    operacion: F.operacion.value, tipo, uso: F.uso.value, municipio: F.municipio.value, colonia: F.colonia.value,
+    lat: n("lat"), lng: n("lng"), sup_terreno: n("sup_terreno"),
+    sup_construccion: tipo === "terreno" ? 0 : n("sup_construccion"),
+    edad: tipo === "terreno" ? null : n("edad"),
+    clase: tipo === "terreno" ? null : F.clase.value,
+    conservacion: tipo === "terreno" ? null : F.conservacion.value,
+    ubicacion: F.ubicacion.value
+  };
+}
+
+// ---------- mapa ----------
+const map = L.map("map").setView([20.66, -103.35], 11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19, attribution: "© OpenStreetMap"
+}).addTo(map);
+const capaBase = L.layerGroup().addTo(map);
+const capaComp = L.layerGroup().addTo(map);
+let marcadorSujeto = null;
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function pintarBase() {
+  capaBase.clearLayers();
+  for (const x of BASE) {
+    if (!Number.isFinite(x.lat) || !Number.isFinite(x.lng)) continue;
+    L.circleMarker([x.lat, x.lng], { radius: 3, color: css("--base"), weight: 1, fillOpacity: 0.5 })
+      .bindTooltip(`${x.tipo} · ${x.operacion} · ${x.colonia}<br>${money(x.precio)}`)
+      .addTo(capaBase);
+  }
+}
+function pintarSujeto() {
+  const s = leerSujeto();
+  if (!Number.isFinite(s.lat) || !Number.isFinite(s.lng)) return;
+  if (marcadorSujeto) marcadorSujeto.remove();
+  marcadorSujeto = L.circleMarker([s.lat, s.lng], { radius: 9, color: css("--subj"), weight: 3, fillOpacity: 0.85 })
+    .bindTooltip("Sujeto").addTo(map);
+}
+map.on("click", e => {
+  F.lat.value = e.latlng.lat.toFixed(5);
+  F.lng.value = e.latlng.lng.toFixed(5);
+  pintarSujeto();
+});
+F.lat.addEventListener("change", pintarSujeto);
+F.lng.addEventListener("change", pintarSujeto);
+
+// ---------- homologación ----------
+F.addEventListener("submit", e => {
+  e.preventDefault();
+  sujetoActual = leerSujeto();
+  if (!(superficieBase(sujetoActual) > 0)) { alert("Captura la superficie del sujeto."); return; }
+  const comps = buscarComparables(sujetoActual, BASE, CFG);
+  filas = comps.map((c, i) => {
+    const h = homologar(sujetoActual, c, CFG, 1);
+    return { n: i + 1, c, fz: 1, h, incluir: h.dentroDeRango };
+  });
+  pintarSujeto();
+  capaComp.clearLayers();
+  const pts = [[sujetoActual.lat, sujetoActual.lng]];
+  for (const r of filas) {
+    pts.push([r.c.lat, r.c.lng]);
+    L.circleMarker([r.c.lat, r.c.lng], { radius: 8, color: css("--comp"), weight: 2, fillOpacity: 0.8 })
+      .bindTooltip(`#${r.n} ${r.c.colonia}`, { permanent: true, direction: "top", className: "lbl" })
+      .addTo(capaComp);
+  }
+  if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40], maxZoom: 15 });
+  renderHomologacion();
+});
+
+function renderHomologacion() {
+  const s = sujetoActual;
+  const terreno = s.tipo === "terreno";
+  for (const r of filas) r.h = homologar(s, r.c, CFG, r.fz);
+  const unidad = terreno ? "m² terreno" : "m² construcción";
+  const cols = terreno
+    ? ["negociacion", "zona", "ubicacion", "superficie"]
+    : ["negociacion", "zona", "ubicacion", "superficie", "edad", "conservacion", "calidad"];
+  const nombres = { negociacion: "F.neg", zona: "F.zona", ubicacion: "F.ubic", superficie: "F.sup", edad: "F.edad", conservacion: "F.cons", calidad: "F.cal" };
+
+  let html = `<thead><tr><th>#</th><th class="l">Colonia / municipio</th><th class="l">Clase · edad · cons.</th><th>Dist. km</th>
+    <th>Precio</th><th>Sup.</th><th>$/${unidad}</th>${cols.map(k => `<th>${nombres[k]}</th>`).join("")}
+    <th>F. resultante</th><th>$/m² homologado</th><th>Usar</th></tr></thead><tbody>`;
+  for (const r of filas) {
+    const c = r.c, f = r.h.factores;
+    html += `<tr class="${r.h.dentroDeRango ? "" : "fuera"}">
+      <td>${r.n}</td>
+      <td class="l">${esc(c.colonia)}<br><span class="muted">${esc(c.municipio)} · ${esc(c.fuente)}</span></td>
+      <td class="l">${terreno ? "—" : `${esc(c.clase)} · ${c.edad ?? "—"} a · ${esc(c.conservacion)}`}</td>
+      <td>${fmt(c.distanciaKm, 1)}</td>
+      <td>${money(c.precio)}</td>
+      <td>${fmt(superficieBase(c))}</td>
+      <td>${money(r.h.unitario)}</td>
+      ${cols.map(k => k === "zona"
+        ? `<td><input class="fz" type="number" step="0.01" value="${r.fz}" data-n="${r.n}"></td>`
+        : `<td>${fmt(f[k], 3)}</td>`).join("")}
+      <td><b>${fmt(r.h.resultante, 3)}</b></td>
+      <td><b>${money(r.h.homologado)}</b></td>
+      <td><input type="checkbox" class="inc" data-n="${r.n}" ${r.incluir ? "checked" : ""}></td>
+    </tr>`;
+  }
+  $("#tabla-homo").innerHTML = html + "</tbody>";
+  $("#tabla-homo").querySelectorAll("input.fz").forEach(i => i.addEventListener("change", e => {
+    const r = filas.find(x => x.n == e.target.dataset.n); r.fz = Number(e.target.value) || 1; renderHomologacion();
+  }));
+  $("#tabla-homo").querySelectorAll("input.inc").forEach(i => i.addEventListener("change", e => {
+    filas.find(x => x.n == e.target.dataset.n).incluir = e.target.checked; renderHomologacion();
+  }));
+
+  const res = concluir(s, filas);
+  const avisos = [];
+  if (filas.length < CFG.minComparables) avisos.push(`Solo hay ${filas.length} comparables del mismo tipo, uso y operación; el mínimo configurado es ${CFG.minComparables}. Carga más anuncios.`);
+  if (res && res.n < CFG.minComparables) avisos.push(`Se están usando ${res.n} comparables; el mínimo configurado es ${CFG.minComparables}.`);
+  if (res && res.cv > 0.15) avisos.push(`Coeficiente de variación de ${fmt(res.cv * 100, 1)}%: dispersión alta, revisa comparables y factores.`);
+  const fuera = filas.filter(r => !r.h.dentroDeRango).length;
+  if (fuera) avisos.push(`${fuera} comparable(s) con factor resultante fuera de ${CFG.rangoMin}–${CFG.rangoMax}.`);
+  $("#avisos").innerHTML = avisos.map(a => `<div class="aviso">${esc(a)}</div>`).join("");
+
+  $("#kpis").innerHTML = res ? `
+    <div class="kpi main"><span>Valor ${s.operacion === "renta" ? "de renta mensual" : "comercial"} (enfoque de mercado)</span><b>${money(res.valor)}</b></div>
+    <div class="kpi"><span>$/${unidad} homologado</span><b>${money(res.unitarioPromedio)}</b></div>
+    <div class="kpi"><span>Rango homologado</span><b>${money(res.min)} – ${money(res.max)}</b></div>
+    <div class="kpi"><span>Coef. de variación</span><b>${fmt(res.cv * 100, 1)}%</b></div>
+    <div class="kpi"><span>Comparables usados</span><b>${res.n} de ${filas.length}</b></div>`
+    : `<div class="aviso">No hay comparables seleccionados.</div>`;
+  $("#resultado").hidden = false;
+}
+$("#imprimir").addEventListener("click", () => window.print());
+
+// ---------- base de datos ----------
+const FILTROS = [["operacion", OPERACIONES], ["tipo", TIPOS], ["uso", USOS], ["municipio", MUNICIPIOS], ["clase", CLASES]];
+$("#filtros").innerHTML = FILTROS.map(([k, arr]) =>
+  `<label>${k}<select data-k="${k}"><option value="">Todos</option>${arr.map(v => `<option>${esc(v)}</option>`).join("")}</select></label>`).join("");
+$("#filtros").addEventListener("change", renderBase);
+
+function renderBase() {
+  const f = {};
+  $("#filtros").querySelectorAll("select").forEach(s => { if (s.value) f[s.dataset.k] = s.value; });
+  const rows = BASE.filter(x => Object.entries(f).every(([k, v]) => x[k] === v));
+  $("#conteo").textContent = `${fmt(rows.length)} de ${fmt(BASE.length)} inmuebles`;
+  const head = ["id", "operacion", "tipo", "uso", "municipio", "colonia", "precio", "sup_terreno", "sup_construccion", "edad", "clase", "conservacion", "fuente"];
+  $("#tabla-base").innerHTML = `<thead><tr>${head.map(h => `<th class="l">${h}</th>`).join("")}</tr></thead><tbody>` +
+    rows.slice(0, 400).map(x => `<tr>${head.map(h => `<td class="l">${h === "precio" ? money(x[h]) : esc(x[h] ?? "—")}</td>`).join("")}</tr>`).join("") + "</tbody>";
+}
+
+function aCSV(rows) {
+  const q = v => (v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  return [CAMPOS.join(","), ...rows.map(r => CAMPOS.map(k => q(r[k])).join(","))].join("\n");
+}
+function descargar(nombre, texto) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([texto], { type: "text/csv;charset=utf-8" }));
+  a.download = nombre; a.click();
+}
+$("#exportar").addEventListener("click", () => descargar("lawgic-base.csv", aCSV(BASE)));
+
+function agregar(nuevos) {
+  const ids = new Set(nuevos.map(x => x.id));
+  BASE = BASE.filter(x => !ids.has(x.id)).concat(nuevos);
+  guardarLS(LS_BASE, BASE);
+  pintarBase(); actualizarStats();
+}
+
+// ---------- carga ----------
+$(".cols-list").textContent = CAMPOS.join(", ");
+$("#plantilla").addEventListener("click", e => { e.preventDefault(); descargar("plantilla-lawgic.csv", aCSV(BASE.slice(0, 3))); });
+
+$("#archivo").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const nuevos = importarArchivo(file.name, await file.text());
+    agregar(nuevos);
+    $("#arch-out").innerHTML = `<p class="ok">${nuevos.length} inmuebles importados.</p>`;
+  } catch (err) { $("#arch-out").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+});
+
+$("#btn-ia").addEventListener("click", async () => {
+  const key = $("#ak").value.trim(), txt = $("#anuncio").value.trim();
+  if (!key || !txt) { $("#ia-out").innerHTML = `<p class="err">Falta la API key o el anuncio.</p>`; return; }
+  $("#ia-out").innerHTML = `<p class="muted">Analizando con Claude…</p>`;
+  try {
+    const x = await extraerConClaude(txt, key, $("#modelo").value.trim());
+    agregar([x]);
+    $("#ia-out").innerHTML = `<div class="ficha"><b class="ok">Agregado a la base (${esc(x.id)})</b><br>
+      ${esc(x.operacion)} · ${esc(x.tipo)} · ${esc(x.uso)} · ${esc(x.colonia)}, ${esc(x.municipio)}<br>
+      ${money(x.precio)} · terreno ${fmt(x.sup_terreno)} m² · construcción ${fmt(x.sup_construccion)} m²<br>
+      Clase: <b>${esc(x.clase ?? "—")}</b> · edad ${x.edad ?? "—"} a · ${esc(x.conservacion ?? "—")}<br>
+      <span class="muted">${esc(x.justificacion)}</span></div>`;
+  } catch (err) { $("#ia-out").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+});
+
+$("#btn-eb").addEventListener("click", async () => {
+  const key = $("#ebk").value.trim();
+  if (!key) { $("#eb-out").innerHTML = `<p class="err">Falta la API key.</p>`; return; }
+  $("#eb-out").innerHTML = `<p class="muted">Sincronizando…</p>`;
+  try {
+    const nuevos = await importarEasyBroker(key);
+    agregar(nuevos);
+    $("#eb-out").innerHTML = `<p class="ok">${nuevos.length} operaciones importadas. Sin coordenadas ni clase SHF: complétalas antes de usarlas como comparables.</p>`;
+  } catch (err) {
+    $("#eb-out").innerHTML = `<p class="err">${esc(err.message)}. Si el navegador bloquea la conexión (CORS), la sincronización debe correr en servidor.</p>`;
+  }
+});
+
+// ---------- configuración ----------
+const ETIQ = {
+  factorNegociacion: "Factor de negociación", exponenteSuperficie: "Exponente de superficie",
+  pasoCalidad: "Paso entre clases (calidad)", rangoMin: "Factor resultante mínimo", rangoMax: "Factor resultante máximo",
+  numComparables: "Comparables a buscar", minComparables: "Mínimo de comparables", radioKm: "Radio de búsqueda (km)"
+};
+$("#cfg").innerHTML = Object.keys(CONFIG_DEFAULT).map(k =>
+  `<label>${ETIQ[k]}<input type="number" step="any" data-k="${k}" value="${CFG[k]}"></label>`).join("");
+$("#cfg").addEventListener("change", e => {
+  CFG[e.target.dataset.k] = Number(e.target.value);
+  guardarLS(LS_CFG, CFG);
+});
+$("#reset-base").addEventListener("click", () => {
+  BASE = generarDemo(); guardarLS(LS_BASE, BASE); pintarBase(); actualizarStats(); renderBase();
+});
+
+function actualizarStats() {
+  const munis = new Set(BASE.map(x => x.municipio).filter(Boolean)).size;
+  $("#stats").textContent = `${fmt(BASE.length)} inmuebles en la base · ${munis} municipios de la ZMG`;
+}
+
+pintarBase();
+pintarSujeto();
+actualizarStats();

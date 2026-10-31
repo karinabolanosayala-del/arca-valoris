@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lawgic · Comparables ZMG</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Lawgic <span>· Comparables y homologación SHF · ZMG</span></h1>
+    <p id="stats" class="muted"></p>
+  </div>
+  <nav>
+    <button data-tab="valuacion" class="on">Valuación</button>
+    <button data-tab="base">Base de datos</button>
+    <button data-tab="carga">Cargar anuncios</button>
+    <button data-tab="config">Configuración</button>
+  </nav>
+</header>
+
+<main>
+<!-- VALUACIÓN -->
+<section id="tab-valuacion" class="tab on">
+  <div class="cols">
+    <form id="sujeto" class="card">
+      <h2>Inmueble sujeto</h2>
+      <div class="grid2">
+        <label>Operación<select name="operacion"></select></label>
+        <label>Tipo<select name="tipo"></select></label>
+        <label>Uso de suelo<select name="uso"></select></label>
+        <label>Municipio<select name="municipio"></select></label>
+        <label class="span2">Colonia / dirección<input name="colonia" value="Chapalita"></label>
+        <label>Latitud<input name="lat" type="number" step="any" value="20.664"></label>
+        <label>Longitud<input name="lng" type="number" step="any" value="-103.401"></label>
+        <p class="span2 hint">Clic en el mapa para ubicar el sujeto.</p>
+        <label>Sup. terreno m²<input name="sup_terreno" type="number" value="200"></label>
+        <label>Sup. construcción m²<input name="sup_construccion" type="number" value="240"></label>
+        <label class="nt">Edad (años)<input name="edad" type="number" value="15"></label>
+        <label class="nt">Clase SHF<select name="clase"></select></label>
+        <label class="nt">Conservación<select name="conservacion"></select></label>
+        <label>Ubicación en manzana<select name="ubicacion"></select></label>
+      </div>
+      <button type="submit" class="primary">Buscar comparables y homologar</button>
+    </form>
+    <div class="card mapcard"><div id="map"></div>
+      <p class="legend"><span class="dot s"></span>Sujeto <span class="dot c"></span>Comparable <span class="dot b"></span>Base de datos</p>
+    </div>
+  </div>
+
+  <div id="resultado" class="card" hidden>
+    <div class="reshead">
+      <h2>Homologación</h2>
+      <button id="imprimir">Imprimir / PDF</button>
+    </div>
+    <div id="kpis" class="kpis"></div>
+    <div id="avisos"></div>
+    <div class="tablewrap"><table id="tabla-homo"></table></div>
+    <p class="hint">F. zona es editable por comparable. Desmarca "Usar" para excluir un comparable del valor concluido. Los comparables con factor resultante fuera de rango se marcan en rojo.</p>
+  </div>
+</section>
+
+<!-- BASE -->
+<section id="tab-base" class="tab">
+  <div class="card">
+    <h2>Base de datos de inmuebles</h2>
+    <div class="filtros" id="filtros"></div>
+    <p id="conteo" class="muted"></p>
+    <div class="tablewrap"><table id="tabla-base"></table></div>
+    <button id="exportar">Exportar CSV</button>
+  </div>
+</section>
+
+<!-- CARGA -->
+<section id="tab-carga" class="tab">
+  <div class="cols3">
+    <div class="card">
+      <h2>1 · Anuncio con IA</h2>
+      <p class="muted">Pega el texto de un anuncio (Inmuebles24, Casas y Terrenos, Facebook, WhatsApp). Claude extrae los datos y clasifica tipo, uso, clase SHF, edad y conservación.</p>
+      <label>API key de Anthropic<input id="ak" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
+      <label>Modelo<input id="modelo" value="claude-sonnet-5-5"></label>
+      <textarea id="anuncio" rows="8" placeholder="Pega aquí el anuncio…"></textarea>
+      <button id="btn-ia" class="primary">Extraer y clasificar</button>
+      <div id="ia-out"></div>
+    </div>
+    <div class="card">
+      <h2>2 · Archivo CSV / JSON</h2>
+      <p class="muted">Carga masiva desde exportaciones de inmobiliarias o captura propia. Columnas:</p>
+      <code class="cols-list"></code>
+      <input type="file" id="archivo" accept=".csv,.json">
+      <p><a href="#" id="plantilla">Descargar plantilla CSV</a></p>
+      <div id="arch-out"></div>
+    </div>
+    <div class="card">
+      <h2>3 · EasyBroker API</h2>
+      <p class="muted">Conexión automática al inventario de inmobiliarias vía la API oficial de EasyBroker. Requiere API key de una cuenta de inmobiliaria.</p>
+      <label>API key EasyBroker<input id="ebk" type="password" autocomplete="off"></label>
+      <button id="btn-eb">Sincronizar</button>
+      <div id="eb-out"></div>
+    </div>
+  </div>
+  <p class="hint">Las API keys se usan solo en esta pestaña del navegador y no se guardan.</p>
+</section>
+
+<!-- CONFIG -->
+<section id="tab-config" class="tab">
+  <div class="card">
+    <h2>Parámetros de homologación (SHF)</h2>
+    <p class="muted">Ajusta a tu criterio y a la normativa vigente. Se aplican al siguiente cálculo.</p>
+    <div class="grid3" id="cfg"></div>
+    <button id="reset-base">Restaurar base de demostración</button>
+  </div>
+</section>
+</main>
+
+<footer class="muted">Lawgic · Hackathon 2026 · Los anuncios "demo (simulado)" son datos generados para la demostración, no anuncios reales.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/shf.js"></script>
+<script src="js/ingesta.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

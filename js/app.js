@@ -1,7 +1,7 @@
 // Interfaz de Arca Valoris: estado, mapa, homologación, base de datos y carga.
 
-const LS_BASE = "lawgic-base-v1";
-const LS_CFG = "lawgic-cfg-v1";
+const LS_BASE = "arca-valoris-base-v2";
+const LS_CFG = "arca-valoris-cfg-v1";
 
 const $ = s => document.querySelector(s);
 const fmt = (n, d = 0) => (n == null || !isFinite(n) ? "—" : n.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }));
@@ -48,7 +48,8 @@ function toggleTerreno() {
   F.sup_construccion.closest("label").style.display = t ? "none" : "";
 }
 F.tipo.addEventListener("change", () => {
-  if (F.tipo.value === "local") F.uso.value = "comercial";
+  const usoPorTipo = { casa: "habitacional", departamento: "habitacional", local: "comercial", oficina: "comercial", bodega: "industrial" };
+  if (usoPorTipo[F.tipo.value]) F.uso.value = usoPorTipo[F.tipo.value];
   toggleTerreno();
 });
 toggleTerreno();
@@ -246,7 +247,8 @@ function renderBase() {
   $("#filtros").querySelectorAll("select").forEach(s => { if (s.value) f[s.dataset.k] = s.value; });
   const rows = BASE.filter(x => Object.entries(f).every(([k, v]) => x[k] === v));
   $("#conteo").textContent = `${fmt(rows.length)} de ${fmt(BASE.length)} inmuebles`;
-  const head = ["id", "operacion", "tipo", "uso", "municipio", "colonia", "precio", "sup_terreno", "sup_construccion", "edad", "clase", "conservacion", "fuente"];
+  const head = ["id", "fecha", "operacion", "tipo", "uso", "municipio", "colonia", "precio", "sup_terreno", "sup_construccion",
+    "edad", "clase", "conservacion", "recamaras", "banos", "estacionamientos", "fuente"];
   $("#tabla-base").innerHTML = `<thead><tr>${head.map(h => `<th class="l">${h}</th>`).join("")}</tr></thead><tbody>` +
     rows.slice(0, 400).map(x => `<tr>${head.map(h => `<td class="l">${h === "precio" ? money(x[h]) : esc(x[h] ?? "—")}</td>`).join("")}</tr>`).join("") + "</tbody>";
 }

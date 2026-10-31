@@ -4,7 +4,8 @@
 //  3. EasyBroker API (inventario oficial de inmobiliarias; requiere API key)
 
 const CAMPOS = ["id", "operacion", "tipo", "uso", "municipio", "colonia", "lat", "lng", "precio",
-  "sup_terreno", "sup_construccion", "edad", "clase", "conservacion", "ubicacion", "url", "fuente", "fecha"];
+  "sup_terreno", "sup_construccion", "edad", "clase", "conservacion", "ubicacion",
+  "recamaras", "banos", "estacionamientos", "niveles", "url", "fuente", "fecha"];
 
 function normalizar(r) {
   const num = v => (v === "" || v == null ? null : Number(String(v).replace(/[$,\s]/g, "")));
@@ -14,7 +15,7 @@ function normalizar(r) {
     id: r.id || "IMP-" + Math.random().toString(36).slice(2, 8).toUpperCase(),
     operacion: txt(r.operacion) || "venta",
     tipo,
-    uso: txt(r.uso) || (tipo === "local" ? "comercial" : "habitacional"),
+    uso: txt(r.uso) || ({ local: "comercial", oficina: "comercial", bodega: "industrial" }[tipo] || "habitacional"),
     municipio: r.municipio ? String(r.municipio).trim() : "",
     colonia: r.colonia ? String(r.colonia).trim() : "",
     lat: num(r.lat), lng: num(r.lng),
@@ -25,6 +26,7 @@ function normalizar(r) {
     clase: r.clase ? txt(r.clase) : null,
     conservacion: r.conservacion ? txt(r.conservacion) : null,
     ubicacion: txt(r.ubicacion) || "medio",
+    recamaras: num(r.recamaras), banos: num(r.banos), estacionamientos: num(r.estacionamientos), niveles: num(r.niveles),
     url: r.url || "",
     fuente: r.fuente || "importado",
     fecha: r.fecha || new Date().toISOString().slice(0, 10)
@@ -65,11 +67,12 @@ const PROMPT_EXTRACCION = `Eres un perito valuador en la Zona Metropolitana de G
 El texto puede contener uno o varios anuncios (por ejemplo, una página de resultados copiada de un portal).
 Ignora menús, publicidad y textos que no sean anuncios. Extrae y clasifica cada anuncio.
 Responde SOLO con un arreglo JSON; cada elemento es un objeto con estas llaves:
-operacion ("venta"|"renta"), tipo ("casa"|"departamento"|"local"|"terreno"), uso ("habitacional"|"comercial"),
+operacion ("venta"|"renta"), tipo (${TIPOS.map(t => `"${t}"`).join("|")}), uso (${USOS.map(u => `"${u}"`).join("|")}),
 municipio (uno de: ${MUNICIPIOS.join(", ")}), colonia, lat, lng (coordenadas aproximadas del centro de la colonia),
 precio (número MXN; si es renta, mensual), sup_terreno (m²), sup_construccion (m², 0 si es terreno),
 edad (años estimados; null si es terreno), clase (clasificación SHF: ${CLASES.join(", ")}; null si es terreno),
 conservacion (${CONSERVACION.join(", ")}; null si es terreno), ubicacion ("medio"|"esquina"|"cabecera"),
+recamaras, banos, estacionamientos, niveles (números o null),
 justificacion (una frase sobre por qué asignaste la clase y la conservación).
 Si un dato no aparece, estímalo con criterio de valuador y menciónalo en justificacion.`;
 
@@ -119,7 +122,8 @@ async function importarEasyBroker(apiKey, paginas = 2) {
         out.push(normalizar({
           id: "EB-" + it.public_id + "-" + op.type,
           operacion: op.type === "rental" ? "renta" : "venta",
-          tipo: tipoEB.includes("terreno") ? "terreno" : tipoEB.includes("local") ? "local" : tipoEB.includes("depart") ? "departamento" : "casa",
+          tipo: tipoEB.includes("terreno") ? "terreno" : tipoEB.includes("local") ? "local" : tipoEB.includes("oficina") ? "oficina"
+            : tipoEB.includes("bodega") || tipoEB.includes("nave") ? "bodega" : tipoEB.includes("depart") ? "departamento" : "casa",
           colonia: it.location || "",
           precio: op.amount,
           sup_terreno: it.lot_size, sup_construccion: it.construction_size,

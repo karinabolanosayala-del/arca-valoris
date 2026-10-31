@@ -77,12 +77,13 @@
 <section id="tab-carga" class="tab">
   <div class="cols3">
     <div class="card">
-      <h2>1 · Anuncio con IA</h2>
-      <p class="muted">Pega el texto de un anuncio (Inmuebles24, Casas y Terrenos, Facebook, WhatsApp). Claude extrae los datos y clasifica tipo, uso, clase SHF, edad y conservación.</p>
+      <h2>1 · Anuncios con IA (uno o por lote)</h2>
+      <p class="muted">Pega uno o varios anuncios, o una página de resultados completa que estés consultando (Ctrl+A, Ctrl+C). Claude separa cada anuncio, extrae los datos y clasifica tipo, uso, clase SHF, edad y conservación.</p>
       <label>API key de Anthropic<input id="ak" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
       <label>Modelo<input id="modelo" value="claude-sonnet-5-5"></label>
       <textarea id="anuncio" rows="8" placeholder="Pega aquí el anuncio…"></textarea>
       <button id="btn-ia" class="primary">Extraer y clasificar</button>
+      <p class="hint">Para tu consulta. Revisa los términos de uso del portal antes de reutilizar datos.</p>
       <div id="ia-out"></div>
     </div>
     <div class="card">

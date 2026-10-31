@@ -62,7 +62,9 @@ function importarArchivo(nombre, texto) {
 }
 
 const PROMPT_EXTRACCION = `Eres un perito valuador en la Zona Metropolitana de Guadalajara, México.
-Extrae los datos del anuncio inmobiliario y clasifícalo. Responde SOLO con un objeto JSON con estas llaves:
+El texto puede contener uno o varios anuncios (por ejemplo, una página de resultados copiada de un portal).
+Ignora menús, publicidad y textos que no sean anuncios. Extrae y clasifica cada anuncio.
+Responde SOLO con un arreglo JSON; cada elemento es un objeto con estas llaves:
 operacion ("venta"|"renta"), tipo ("casa"|"departamento"|"local"|"terreno"), uso ("habitacional"|"comercial"),
 municipio (uno de: ${MUNICIPIOS.join(", ")}), colonia, lat, lng (coordenadas aproximadas del centro de la colonia),
 precio (número MXN; si es renta, mensual), sup_terreno (m²), sup_construccion (m², 0 si es terreno),
@@ -82,7 +84,7 @@ async function extraerConClaude(textoAnuncio, apiKey, modelo) {
     },
     body: JSON.stringify({
       model: modelo,
-      max_tokens: 1024,
+      max_tokens: 16000,
       system: PROMPT_EXTRACCION,
       messages: [{ role: "user", content: textoAnuncio }]
     })
@@ -90,11 +92,15 @@ async function extraerConClaude(textoAnuncio, apiKey, modelo) {
   if (!res.ok) throw new Error("Claude API " + res.status + ": " + (await res.text()).slice(0, 300));
   const data = await res.json();
   const texto = data.content.map(b => b.text || "").join("");
-  const json = texto.slice(texto.indexOf("{"), texto.lastIndexOf("}") + 1);
-  const r = JSON.parse(json);
-  const x = normalizar({ ...r, fuente: "Claude (anuncio pegado)" });
-  x.justificacion = r.justificacion || "";
-  return x;
+  const ini = texto.search(/[\[{]/);
+  const fin = Math.max(texto.lastIndexOf("]"), texto.lastIndexOf("}"));
+  let r = JSON.parse(texto.slice(ini, fin + 1));
+  if (!Array.isArray(r)) r = [r];
+  return r.map(a => {
+    const x = normalizar({ ...a, fuente: "Claude (anuncio pegado)" });
+    x.justificacion = a.justificacion || "";
+    return x;
+  });
 }
 
 // EasyBroker: https://dev.easybroker.com — devuelve inventario publicado de la inmobiliaria dueña de la API key.

@@ -235,13 +235,13 @@ $("#btn-ia").addEventListener("click", async () => {
   if (!key || !txt) { $("#ia-out").innerHTML = `<p class="err">Falta la API key o el anuncio.</p>`; return; }
   $("#ia-out").innerHTML = `<p class="muted">Analizando con Claude…</p>`;
   try {
-    const x = await extraerConClaude(txt, key, $("#modelo").value.trim());
-    agregar([x]);
-    $("#ia-out").innerHTML = `<div class="ficha"><b class="ok">Agregado a la base (${esc(x.id)})</b><br>
-      ${esc(x.operacion)} · ${esc(x.tipo)} · ${esc(x.uso)} · ${esc(x.colonia)}, ${esc(x.municipio)}<br>
+    const lote = await extraerConClaude(txt, key, $("#modelo").value.trim());
+    agregar(lote);
+    $("#ia-out").innerHTML = `<p class="ok">${lote.length} anuncio(s) agregados a la base.</p>` + lote.map(x => `<div class="ficha">
+      <b>${esc(x.id)}</b> · ${esc(x.operacion)} · ${esc(x.tipo)} · ${esc(x.uso)} · ${esc(x.colonia)}, ${esc(x.municipio)}<br>
       ${money(x.precio)} · terreno ${fmt(x.sup_terreno)} m² · construcción ${fmt(x.sup_construccion)} m²<br>
       Clase: <b>${esc(x.clase ?? "—")}</b> · edad ${x.edad ?? "—"} a · ${esc(x.conservacion ?? "—")}<br>
-      <span class="muted">${esc(x.justificacion)}</span></div>`;
+      <span class="muted">${esc(x.justificacion)}</span></div>`).join("");
   } catch (err) { $("#ia-out").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 });
 

@@ -5,21 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lawgic · Comparables ZMG</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<header class="top">
-  <div>
-    <h1>Lawgic <span>· Comparables y homologación SHF · ZMG</span></h1>
-    <p id="stats" class="muted"></p>
+<header class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <svg viewBox="0 0 1200 500" preserveAspectRatio="xMidYMax slice">
+      <g fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M0 470 H1200"/>
+        <path d="M120 470 V300 H330 V470 M150 300 V250 H300 V300"/>
+        <path d="M380 470 V210 L520 140 L660 210 V470 M420 260 H620 M420 330 H620 M420 400 H620"/>
+        <path d="M720 470 V250 H1010 V470 M700 250 L865 175 L1030 250 M760 300 H970 M760 370 H970"/>
+        <path d="M1060 470 V330 H1160 V470"/>
+      </g>
+    </svg>
   </div>
-  <nav>
-    <button data-tab="valuacion" class="on">Valuación</button>
-    <button data-tab="base">Base de datos</button>
-    <button data-tab="carga">Cargar anuncios</button>
-    <button data-tab="config">Configuración</button>
-  </nav>
+  <div class="hero-top">
+    <span class="brand">LAWGIC</span>
+    <span class="eyebrow">Valuación inmobiliaria · Zona Metropolitana de Guadalajara</span>
+  </div>
+  <h1 class="hero-word" aria-hidden="true">LAWGIC</h1>
+  <div class="hero-row">
+    <div>
+      <p class="hero-claim">Comparables reales.<br><em>Valor con método.</em></p>
+      <p class="hero-sub">Base de datos de oferta inmobiliaria clasificada con IA, selección de comparables y homologación con metodología SHF, en un solo flujo.</p>
+      <a href="#app" class="cta">Valuar un inmueble <span>→</span></a>
+    </div>
+    <div class="chips">
+      <div class="chip"><b id="stat-n">—</b><span>inmuebles en la base</span></div>
+      <div class="chip"><b id="stat-m">10</b><span>municipios de la ZMG</span></div>
+      <div class="chip"><b>SHF</b><span>metodología de homologación</span></div>
+    </div>
+  </div>
+  <p id="stats" class="sr"></p>
 </header>
+
+<section class="features">
+  <div class="feat"><span class="ico">◇</span><h3>Base de oferta</h3><p>Casas, departamentos, locales y terrenos en venta y renta.</p></div>
+  <div class="feat"><span class="ico">✦</span><h3>Clasificación con IA</h3><p>Claude asigna uso, clase SHF, edad y conservación.</p></div>
+  <div class="feat"><span class="ico">◎</span><h3>Comparables</h3><p>Mismo tipo, uso y operación, ordenados por similitud y distancia.</p></div>
+  <div class="feat"><span class="ico">≡</span><h3>Homologación</h3><p>Factores de negociación, zona, ubicación, superficie, edad, conservación y calidad.</p></div>
+</section>
+
+<nav id="app" class="tabs">
+  <button data-tab="valuacion" class="on">Valuación</button>
+  <button data-tab="base">Base de datos</button>
+  <button data-tab="carga">Cargar anuncios</button>
+  <button data-tab="config">Configuración</button>
+</nav>
 
 <main>
 <!-- VALUACIÓN -->

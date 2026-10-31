@@ -21,8 +21,8 @@ let filas = [];   // comparables homologados en pantalla
 let sujetoActual = null;
 
 // ---------- pestañas ----------
-document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
-  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav.tabs button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.id === "tab-" + b.dataset.tab));
   if (b.dataset.tab === "valuacion") setTimeout(() => map.invalidateSize(), 50);
   if (b.dataset.tab === "base") renderBase();
@@ -70,8 +70,8 @@ function leerSujeto() {
 
 // ---------- mapa ----------
 const map = L.map("map").setView([20.66, -103.35], 11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19, attribution: "© OpenStreetMap"
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  maxZoom: 19, subdomains: "abcd", attribution: "© OpenStreetMap · © CARTO"
 }).addTo(map);
 const capaBase = L.layerGroup().addTo(map);
 const capaComp = L.layerGroup().addTo(map);
@@ -329,6 +329,8 @@ $("#reset-base").addEventListener("click", () => {
 function actualizarStats() {
   const munis = new Set(BASE.map(x => x.municipio).filter(Boolean)).size;
   $("#stats").textContent = `${fmt(BASE.length)} inmuebles en la base · ${munis} municipios de la ZMG`;
+  $("#stat-n").textContent = fmt(BASE.length);
+  $("#stat-m").textContent = munis;
 }
 
 pintarBase();
